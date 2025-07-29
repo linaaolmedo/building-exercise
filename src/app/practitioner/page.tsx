@@ -79,7 +79,7 @@ export default function PractitionerPage() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Today's Sessions</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Today&apos;s Sessions</dt>
                     <dd className="text-lg font-medium text-gray-900">7</dd>
                   </dl>
                 </div>
@@ -168,7 +168,7 @@ export default function PractitionerPage() {
         {/* Today's Schedule */}
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Schedule</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Today&apos;s Schedule</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div>

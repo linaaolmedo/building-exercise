@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { PostgrestError, AuthError } from '@supabase/supabase-js'
 
 // These values would normally come from environment variables
 const supabaseUrl = 'https://qmtoncuptliscobrkjsb.supabase.co'
@@ -38,7 +39,7 @@ export const authUtils = {
     return { user, error }
   },
 
-  async getCurrentAppUser(): Promise<{ data: AppUser | null, error: any }> {
+  async getCurrentAppUser(): Promise<{ data: AppUser | null, error: AuthError | PostgrestError | null }> {
     const { user, error: authError } = await this.getCurrentUser()
     
     if (authError || !user) {

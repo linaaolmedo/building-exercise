@@ -1,15 +1,15 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import { User, AuthResponse, AuthError } from '@supabase/supabase-js'
 import { authUtils, AppUser, supabase } from '../lib/supabase'
 
 interface AuthContextType {
   user: User | null
   appUser: AppUser | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>
-  signOut: () => Promise<{ error: any }>
+  signIn: (email: string, password: string) => Promise<{ data: AuthResponse['data']; error: AuthError | null }>
+  signOut: () => Promise<{ error: AuthError | null }>
   refreshAppUser: () => Promise<void>
 }
 

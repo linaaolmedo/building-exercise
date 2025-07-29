@@ -47,7 +47,7 @@ export default function Home() {
       } else if (data?.user) {
         // Redirect will happen via useEffect when appUser is loaded
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred');
     } finally {
       setIsLogging(false);
