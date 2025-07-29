@@ -1,0 +1,527 @@
+KCSOS / CYBHI Prototype Database — Data Dictionary
+(Single Markdown file for direct copy/paste into an LLM coding assistant or docs repo.)
+
+How to Read This Document
+Purpose: Why the table exists.
+
+PK / FKs: Primary key and important foreign keys.
+
+Columns Table:
+
+Type: PostgreSQL type.
+
+NULL?: NO means NOT NULL.
+
+Default: Value if none supplied.
+
+FK To: table.column if a foreign key reference exists.
+
+Description: What the field stores + business rules or examples.
+
+1. audit_log
+Purpose: Central row-level audit trail capturing INSERT/UPDATE/DELETE events for compliance, debugging, and accountability.
+
+PK: id
+FKs: None enforced (stores user_id loosely to avoid circular trigger issues)
+
+Column	Type	NULL?	Default	FK To	Description
+id	BIGSERIAL	NO	—	—	Unique audit entry ID.
+table_name	TEXT	NO	—	—	Name of the table affected (e.g., student).
+record_pk	JSONB	NO	—	—	Primary key value(s) of the changed row, usually {"id": <int>}.
+action	TEXT	NO	—	—	One of INSERT, UPDATE, or DELETE.
+changed_data	JSONB	YES	—	—	The new row state (for INSERT/UPDATE).
+old_data	JSONB	YES	—	—	The previous row state (for UPDATE/DELETE).
+user_id	INTEGER	YES	—	—	The app user who initiated the change (nullable if system/unknown).
+occurred_at	TIMESTAMPTZ	NO	NOW()	—	Timestamp of when the change was logged.
+
+2. app_user
+Purpose: All platform users (practitioners, supervisors, admins, support).
+
+PK: id
+FKs: supervisor_id → app_user.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	User ID.
+first_name	TEXT	NO	—	—	First name.
+last_name	TEXT	NO	—	—	Last name.
+email	TEXT	NO	UNIQUE	—	Unique login/email.
+phone	TEXT	YES	—	—	Optional phone.
+address	TEXT	YES	—	—	Optional address.
+npi	TEXT	YES	—	—	National Provider Identifier (practitioners).
+license_number	TEXT	YES	—	—	Professional license number.
+hire_date	DATE	YES	—	—	Employment start date.
+status	TEXT	YES	'Active'	—	Account status: Active, Inactive, Suspended.
+last_login	TIMESTAMPTZ	YES	—	—	Last login timestamp.
+role	TEXT	NO	—	—	Practitioner, Supervisor, Admin, Support, etc.
+department	TEXT	YES	—	—	Dept/Team.
+supervisor_id	INTEGER	YES	—	app_user.id	User’s supervisor.
+districts	TEXT[]	YES	—	—	List of district names/IDs.
+user_type	TEXT	YES	—	—	Embedded / Affiliated etc.
+permission_level	TEXT	YES	—	—	Standard, Advanced, Full.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Row creation time.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Last update time.
+created_by	INTEGER	YES	—	app_user.id	Creator user ID.
+updated_by	INTEGER	YES	—	app_user.id	Last updater user ID.
+
+3. organization
+Purpose: Districts/organizations/payer entities.
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Organization ID.
+name	TEXT	NO	—	—	Official name.
+orp_name	TEXT	YES	—	—	Rendering provider name.
+orp_npi	TEXT	YES	—	—	ORP NPI number.
+payer_type	TEXT	NO	—	—	Fee Schedule, LEA-BOP, etc.
+status	TEXT	YES	'Active'	—	Active/Inactive.
+effective_date	DATE	YES	—	—	Config effective date.
+contact_email	TEXT	YES	—	—	Primary contact.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+4. qualification
+Purpose: Master list of professional credentials (licenses, certificates).
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Qualification ID.
+type	TEXT	YES	—	—	License / Credential / Certificate.
+code	TEXT	YES	UNIQUE	—	Unique short code.
+description	TEXT	YES	—	—	Detailed name/description.
+status	TEXT	YES	'Active'	—	Active/Archived.
+effective_date	DATE	YES	—	—	Optional start date.
+expiration_date	DATE	YES	—	—	Optional end date.
+requirements	TEXT[]	YES	—	—	Text list of requirements.
+jurisdiction	TEXT	YES	—	—	State/region.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+5. billing_code
+Purpose: Legacy/general (non-CYBHI or shared) service codes & rates.
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Billing code ID.
+code	TEXT	NO	UNIQUE	—	CPT/HCPCS/etc.
+type	TEXT	YES	—	—	Classification (Treatment, Assessment, ...).
+description	TEXT	YES	—	—	Description.
+unit	TEXT	YES	—	—	Unit of service (e.g., "per 15 min").
+rate	NUMERIC(12,2)	YES	—	—	Monetary rate.
+eligible_practitioners	TEXT[]	YES	—	—	Practitioner role tags.
+status	TEXT	YES	'Active'	—	Active/Archived.
+effective_date	DATE	YES	—	—	Start date.
+payer_specific	BOOLEAN	YES	FALSE	—	True if limited to certain payers.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+6. practitioner_type
+Purpose: CYBHI practitioner acronyms list (MD, LCSW, CHW, etc.).
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+code	TEXT	NO	UNIQUE	—	Short code, e.g., LCSW, CHW.
+description	TEXT	NO	—	—	Full description.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+7. modifier
+Purpose: Billing modifiers (U4, HA, HQ, 93, 95, etc.) with requirements.
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Modifier ID.
+code	TEXT	NO	UNIQUE	—	Modifier code (U4, HA, etc.).
+description	TEXT	YES	—	—	Meaning.
+required	BOOLEAN	YES	FALSE	—	If always required for some program.
+notes	TEXT	YES	—	—	Extra rules/usage notes.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+8. fee_schedule_code
+Purpose: CYBHI fee schedule entries: procedure codes, descriptions, timing, rates, flags.
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+procedure_code	TEXT	NO	—	—	CPT/HCPCS/T code (unique within CYBHI).
+service_description	TEXT	NO	—	—	Human readable description.
+service_category	TEXT	NO	—	—	e.g., Psychoeducation, Treatment, Screenings/Assessments.
+time_increment_text	TEXT	YES	—	—	Free text (e.g., "each 15 min", "first 60 min").
+base_minutes	INTEGER	YES	—	—	Parsed base minutes for increments (if relevant).
+group_size_min	INTEGER	YES	—	—	Minimum group size if group code.
+group_size_max	INTEGER	YES	—	—	Maximum group size if specified.
+rate_amount	NUMERIC(12,2)	YES	—	—	Fee schedule rate.
+rate_unit	TEXT	YES	—	—	e.g., per 15 min, per session.
+dyadic_allowed	BOOLEAN	YES	FALSE	—	TRUE if caregiver dyadic billing allowed.
+telehealth_audio	BOOLEAN	YES	FALSE	—	TRUE if audio-only allowed.
+telehealth_av	BOOLEAN	YES	FALSE	—	TRUE if audio/video telehealth allowed.
+add_on_to_code	TEXT	YES	—	—	Base code if this is an add-on.
+effective_year	INTEGER	YES	—	—	e.g., 2025.
+source_version	TEXT	YES	—	—	Document/version label.
+notes	TEXT	YES	—	—	Special rules (midpoint, U1 usage, etc.).
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+9. fee_code_practitioner_type
+Purpose: Join table mapping fee schedule codes to eligible practitioner types.
+
+PK: id
+FKs: fee_schedule_code_id → fee_schedule_code.id, practitioner_type_id → practitioner_type.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+fee_schedule_code_id	INTEGER	NO	—	fee_schedule_code.id	Fee code.
+practitioner_type_id	INTEGER	NO	—	practitioner_type.id	Practitioner type.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (fee_schedule_code_id, practitioner_type_id) prevents duplicates.
+
+10. fee_code_modifier
+Purpose: Join table mapping modifiers to fee schedule codes (indicating required/optional usage).
+
+PK: id
+FKs: fee_schedule_code_id → fee_schedule_code.id, modifier_id → modifier.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+fee_schedule_code_id	INTEGER	NO	—	fee_schedule_code.id	Fee code.
+modifier_id	INTEGER	NO	—	modifier.id	Modifier.
+is_required	BOOLEAN	YES	FALSE	—	TRUE if required for that code/context.
+context_note	TEXT	YES	—	—	When/how to apply (e.g., “Group only”).
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (fee_schedule_code_id, modifier_id).
+
+11. user_qualification
+Purpose: Which users hold which qualifications (many-to-many).
+
+PK: id
+FKs: user_id → app_user.id, qualification_id → qualification.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+user_id	INTEGER	NO	—	app_user.id	User.
+qualification_id	INTEGER	NO	—	qualification.id	Qualification.
+date_obtained	DATE	YES	—	—	When obtained.
+expiration_date	DATE	YES	—	—	When it expires.
+is_active	BOOLEAN	YES	TRUE	—	Active flag.
+verification_status	TEXT	YES	'Pending'	—	Verified, Pending, Expired.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (user_id, qualification_id).
+
+12. user_authorized_service
+Purpose: Which users can bill which legacy billing_codes.
+
+PK: id
+FKs: user_id → app_user.id, billing_code_id → billing_code.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+user_id	INTEGER	NO	—	app_user.id	User.
+billing_code_id	INTEGER	NO	—	billing_code.id	Billing code.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (user_id, billing_code_id).
+
+13. user_practitioner_type
+Purpose: Map users to CYBHI practitioner types (MD, CHW, etc.).
+
+PK: id
+FKs: user_id → app_user.id, practitioner_type_id → practitioner_type.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+user_id	INTEGER	NO	—	app_user.id	User.
+practitioner_type_id	INTEGER	NO	—	practitioner_type.id	Type code.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (user_id, practitioner_type_id).
+
+14. student
+Purpose: Core student demographics, education, insurance, consent.
+
+PK: id
+FKs: practitioner_id → app_user.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Student ID.
+ssid	TEXT	NO	UNIQUE	—	State Student ID.
+local_id	TEXT	YES	—	—	District-specific ID.
+first_name	TEXT	NO	—	—	First name.
+last_name	TEXT	NO	—	—	Last name.
+preferred_name	TEXT	YES	—	—	Preferred name.
+birthdate	DATE	NO	—	—	DOB.
+status	TEXT	YES	'Active'	—	Active/Inactive.
+last_modified_at	TIMESTAMPTZ	YES	NOW()	—	Last update (auto).
+gender	TEXT	YES	—	—	Gender.
+grade	SMALLINT	YES	—	—	Grade level.
+district	TEXT	NO	—	—	District name/ID.
+school	TEXT	YES	—	—	School name.
+address	TEXT	YES	—	—	Street address.
+city	TEXT	YES	—	—	City.
+state	TEXT	YES	—	—	State.
+zip_code	TEXT	YES	—	—	ZIP/postal code.
+primary_contact_name	TEXT	YES	—	—	Parent/guardian name.
+primary_contact_phone	TEXT	YES	—	—	Contact phone.
+transportation_team	TEXT	YES	—	—	Optional transportation team.
+transportation_needs	TEXT	YES	—	—	Special transportation requirements.
+practitioner_id	INTEGER	YES	—	app_user.id	Assigned practitioner.
+primary_disability	TEXT	YES	—	—	Primary disability classification.
+parental_consent_on_file	BOOLEAN	YES	FALSE	—	Consent docs recorded.
+parental_consent_in_bill	BOOLEAN	YES	FALSE	—	Consent included in billing.
+parental_consent_given	BOOLEAN	YES	FALSE	—	Consent to treat given.
+parental_consent_date	DATE	YES	—	—	Date consent was given.
+comments	TEXT	YES	—	—	Misc notes.
+insurance_type	TEXT	YES	—	—	Insurance type.
+insurance_carrier	TEXT	YES	—	—	Carrier name.
+insurance_group_number	TEXT	YES	—	—	Group number.
+insurance_policy_number	TEXT	YES	—	—	Policy number.
+insurance_effective_date	DATE	YES	—	—	Policy effective date.
+medi_cal_eligible	BOOLEAN	YES	FALSE	—	Medicaid (Medi-Cal) eligibility.
+medi_cal_benefits_id	TEXT	YES	—	—	Medi-Cal ID.
+copay_id	TEXT	YES	—	—	Copay identifier.
+iep_date	DATE	YES	—	—	IEP date.
+next_review_date	DATE	YES	—	—	Next IEP review date.
+emergency_contact_name	TEXT	YES	—	—	Emergency contact.
+emergency_contact_phone	TEXT	YES	—	—	Emergency phone.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+15. service
+Purpose: Scheduled/delivered service sessions (individual or group).
+
+PK: id
+FKs: student_id → student.id, practitioner_id → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Service ID.
+student_id	INTEGER	NO	—	student.id	Student receiving service.
+practitioner_id	INTEGER	NO	—	app_user.id	Practitioner rendering service.
+service_date	DATE	NO	—	—	Date provided/scheduled.
+service_time	TIME	YES	—	—	Scheduled start time.
+end_time	TIME	YES	—	—	Actual end time.
+duration_minutes	INTEGER	YES	—	—	Planned duration.
+service_type	TEXT	YES	—	—	Code/category (e.g., “Speech Therapy”).
+location	TEXT	YES	—	—	School, Home, etc.
+status	TEXT	YES	'Upcoming'	—	Upcoming, Incomplete, Completed, Cancelled.
+case_notes	TEXT	YES	—	—	Required notes (completion).
+appointment_notes	TEXT	YES	—	—	Pre-service notes.
+is_group_service	BOOLEAN	YES	FALSE	—	true if group session.
+group_name	TEXT	YES	—	—	Group label if group session.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+16. claim
+Purpose: Insurance claims lifecycle (837/835), amounts, modifiers, audit.
+
+PK: id
+FKs: student_ssid → student.ssid, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Internal claim ID.
+claim_number	TEXT	NO	UNIQUE	—	External claim number.
+batch_number	TEXT	YES	—	—	Batch grouping ID.
+status	TEXT	YES	'Incomplete'	—	Claim status: Incomplete, Approved, Submitted, Paid, Rejected.
+service_date	DATE	YES	—	—	Date of service.
+billed_amount	NUMERIC(12,2)	YES	—	—	Amount billed.
+paid_amount	NUMERIC(12,2)	YES	—	—	Amount paid.
+finalized_date	DATE	YES	—	—	Date paid/settled.
+service_code	TEXT	YES	—	—	Billing code used.
+service_description	TEXT	YES	—	—	Description of that service.
+quantity	NUMERIC	YES	—	—	Units/quantity.
+quantity_type	TEXT	YES	—	—	Unit type (UN, etc.).
+location	TEXT	YES	—	—	Place of service.
+frequency_type	TEXT	YES	—	—	Frequency limit descriptor.
+rendering_provider	TEXT	YES	—	—	Provider name.
+rendering_provider_npi	TEXT	YES	—	—	Provider NPI.
+referring_provider	TEXT	YES	—	—	Referring provider name.
+referring_provider_npi	TEXT	YES	—	—	Referring NPI.
+district	TEXT	YES	—	—	District billed under.
+student_ssid	TEXT	YES	—	student.ssid	SSID from student table.
+student_name	TEXT	YES	—	—	Snapshot of student name.
+student_dob	DATE	YES	—	—	DOB snapshot.
+insurance_type	TEXT	YES	—	—	Insurance type.
+insurance_carrier	TEXT	YES	—	—	Carrier.
+medi_cal_eligible	BOOLEAN	YES	—	—	Medicaid eligibility flag.
+carelon_id	TEXT	YES	—	—	Carelon ID if used.
+consent_to_treat	BOOLEAN	YES	—	—	Consent recorded?
+consent_to_bill	BOOLEAN	YES	—	—	Billing consent recorded?
+modifiers	TEXT[]	YES	—	—	Array of modifiers (U4, HA, etc.).
+remittance_data	JSONB	YES	—	—	835 ERA data (denial codes, trace numbers, etc.).
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+17. permission_category
+Purpose: Top-level permission grouping for RBAC UI.
+
+PK: id
+FKs: created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Category ID.
+title	TEXT	NO	—	—	Display title.
+icon	TEXT	YES	—	—	UI icon hint.
+expanded	BOOLEAN	YES	FALSE	—	Default UI expansion.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+18. permission_item
+Purpose: Atomic permissions mapped to roles (Practitioner, Supervisor, etc.).
+
+PK: id
+FKs: category_id → permission_category.id, created_by/updated_by → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Permission ID.
+category_id	INTEGER	NO	—	permission_category.id	Parent category.
+name	TEXT	NO	UNIQUE	—	Permission name/key.
+practitioner	BOOLEAN	YES	FALSE	—	Granted to Practitioner role?
+supervisor	BOOLEAN	YES	FALSE	—	For Supervisors?
+district_admin	BOOLEAN	YES	FALSE	—	For District Admins?
+system_admin	BOOLEAN	YES	FALSE	—	For System Admin?
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+19. service_group
+Purpose: Defines group therapy/classes; ties to practitioner; used by services.
+
+PK: id
+FKs: created_by/updated_by/practitioner_id → app_user.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Group ID.
+name	TEXT	NO	—	—	Group name/label.
+description	TEXT	YES	—	—	About the group.
+created_date	DATE	YES	CURRENT_DATE	—	When group was created.
+created_by	INTEGER	YES	—	app_user.id	Creator user.
+practitioner_id	INTEGER	YES	—	app_user.id	Assigned practitioner.
+status	TEXT	YES	'Active'	—	Active/Inactive/Completed.
+service_type	TEXT	YES	—	—	Service category.
+meeting_frequency	TEXT	YES	—	—	e.g., "2x/week".
+duration	TEXT	YES	—	—	Typical session duration.
+location	TEXT	YES	—	—	Physical location.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+20. group_membership
+Purpose: Students assigned to groups (many-to-many: group ⇄ student).
+
+PK: id
+FKs: group_id → service_group.id, student_id → student.id
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	Row ID.
+group_id	INTEGER	NO	—	service_group.id	Group.
+student_id	INTEGER	NO	—	student.id	Student.
+join_date	DATE	YES	—	—	When student joined.
+status	TEXT	YES	'Active'	—	Active/Inactive.
+exit_date	DATE	YES	—	—	When exited.
+exit_reason	TEXT	YES	—	—	Reason for exit.
+created_at	TIMESTAMPTZ	YES	NOW()	—	Created timestamp.
+updated_at	TIMESTAMPTZ	YES	NOW()	—	Updated timestamp.
+created_by	INTEGER	YES	—	app_user.id	Creator.
+updated_by	INTEGER	YES	—	app_user.id	Updater.
+
+Unique Constraint: (group_id, student_id).
+
+21. file_metadata
+Purpose: Metadata for uploaded documents (parental consent forms, qualification PDFs, etc.).
+
+PK: id
+FKs: uploaded_by → app_user.id
+Note: Uses a generic entity_table + entity_id pair instead of per-table FKs for flexibility.
+
+Column	Type	NULL?	Default	FK To	Description
+id	SERIAL	NO	—	—	File metadata ID.
+entity_table	TEXT	NO	—	—	Target table name (e.g., student, app_user, claim).
+entity_id	INTEGER	NO	—	—	Target row ID in that table.
+document_type	TEXT	NO	—	—	e.g., Parental Consent, Qualification Doc.
+file_name	TEXT	NO	—	—	Original filename.
+mime_type	TEXT	YES	—	—	MIME type (application/pdf).
+storage_path	TEXT	NO	—	—	Storage key/path/URL.
+file_size_bytes	BIGINT	YES	—	—	Size in bytes.
+checksum	TEXT	YES	—	—	Optional integrity hash.
+notes	TEXT	YES	—	—	Comments or tags.
+uploaded_by	INTEGER	YES	—	app_user.id	Uploader.
+uploaded_at	TIMESTAMPTZ	YES	NOW()	—	Upload timestamp.
+
+22. Audit Triggers (Conceptual)
+A generic trigger function audit_row_change() writes to audit_log for every INSERT/UPDATE/DELETE on core tables.
+
+Triggers are attached to:
+app_user, organization, qualification, billing_code, practitioner_type, modifier, fee_schedule_code, fee_code_practitioner_type, fee_code_modifier, user_qualification, user_authorized_service, user_practitioner_type, student, service, claim, permission_category, permission_item, service_group, group_membership, file_metadata.
+
+Note: If you add new tables, attach the trigger to maintain auditing.
+
+Quick Reference: Common Enumerations / Expected Values
+status columns (various tables): 'Active', 'Inactive', 'Suspended', 'Completed', 'Upcoming', 'Incomplete', etc.
+
+roles (app_user.role): 'Practitioner', 'Supervisor', 'Admin', 'Support', etc.
+
+permission_level: 'Standard', 'Advanced', 'Full'.
+
+modifiers: 'U4', 'HA', 'HQ', 'U1', '93', '95', 'U2'.
+
+service_category (fee schedule): 'Psychoeducation', 'Screenings/Assessments', 'Treatment', 'Case Mgmt/Care Coordination'.
+
+Tips for LLM-aware Code Generation
+Foreign keys & cascade: Many junction tables use ON DELETE CASCADE—be careful when deleting parent rows.
+
+Audit fields (created_by, updated_by): Populate with a system user ID if running batch scripts.
+
+modifiers array in claim: Validate against modifier.code.
+
+Files: file_metadata is intentionally generic; ensure your app enforces valid entity_table strings.
+
+Nullable rates: Some fee codes may temporarily carry rate_amount = NULL until updated.
