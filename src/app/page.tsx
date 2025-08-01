@@ -47,7 +47,7 @@ export default function Home() {
       } else if (data?.user) {
         // Redirect will happen via useEffect when appUser is loaded
       }
-    } catch (_err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLogging(false);
@@ -176,12 +176,7 @@ export default function Home() {
                 </a>
               </div>
               
-              <div className="text-center">
-                <span className="text-sm text-gray-500">or </span>
-                <a href="#" className="text-sm text-teal-600 hover:text-teal-700 hover:underline">
-                  access quickly
-                </a>
-              </div>
+
             </div>
           </form>
         </div>

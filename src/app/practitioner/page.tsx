@@ -120,6 +120,8 @@ export default function PractitionerPage() {
           </div>
         </div>
 
+
+
         {/* Main Functions */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {/* Student Management */}
@@ -127,18 +129,18 @@ export default function PractitionerPage() {
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Student Management</h3>
               <div className="space-y-3">
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                <a href="/practitioner/caseload" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="font-medium text-gray-900">My Caseload</div>
                   <div className="text-sm text-gray-500">View and manage assigned students</div>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                  <div className="font-medium text-gray-900">Service Plans</div>
+                </a>
+                <a href="/practitioner/student-services" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                  <div className="font-medium text-gray-900">Student Services</div>
                   <div className="text-sm text-gray-500">Create and update individual service plans</div>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                </a>
+                <a href="/practitioner/student-services" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="font-medium text-gray-900">Progress Tracking</div>
                   <div className="text-sm text-gray-500">Monitor student progress and outcomes</div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -148,18 +150,18 @@ export default function PractitionerPage() {
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Clinical Documentation</h3>
               <div className="space-y-3">
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                  <div className="font-medium text-gray-900">Session Notes</div>
+                <a href="/practitioner/log-service" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                  <div className="font-medium text-gray-900">Log a Service</div>
                   <div className="text-sm text-gray-500">Document service delivery and observations</div>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                </a>
+                <a href="/practitioner/log-service" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="font-medium text-gray-900">Service Claims</div>
                   <div className="text-sm text-gray-500">Submit and track billing claims</div>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                </a>
+                <a href="/practitioner/reports" className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                   <div className="font-medium text-gray-900">Reports</div>
                   <div className="text-sm text-gray-500">Generate progress and compliance reports</div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
